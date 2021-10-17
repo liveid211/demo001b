@@ -1,0 +1,42 @@
+name: ARM Template Deployment
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+env:
+  BRANCH_NAME: 'main'
+  DOTNET_VERSION: '3.1.x'                   # set this to the dotnet version to use
+
+jobs:
+  deploy-temp-env-template:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+      - name: Run ARM deploy
+        uses: azure/arm-deploy@v1
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
+          resourceGroupName: ${{ secrets.AZURE_RG }}
+          template: ./ArmTemplates/azuredeploy.json
+          parameters: 
+            appName=fn101721b-${{ env.BRANCH_NAME }}-site
+    
+      - name: Trigger deploy to temp
+        if: success()
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.REPO_GHA_PAT }}
+          repository: ${{ github.repository }}
+          event-type: deploy-To-Temp
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}", "branch": "${{ env.BRANCH_NAME }}"}'
+  
