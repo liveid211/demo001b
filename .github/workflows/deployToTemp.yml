@@ -21,16 +21,13 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Install Dependencies
-        run: dotnet restore
-        
-      - name: Build with dotnet
-        run: dotnet build --configuration Release 
-          
-      - name: dotnet publish
-        run: | 
-          dotnet publish -c Release -o ${{ env.BRANCH_NAME }}
+      
+      - name: 'Resolve Project Dependencies Using Dotnet'
+        shell: bash
+        run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet build --configuration Release --output ${{ env.BRANCH_NAME }}
+          popd
           
       # Log into Azure
       - uses: azure/login@v1
